@@ -1,0 +1,69 @@
+/* Basic CSS for Popup */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    width: 300px; /* Standard popup width */
+    padding: 15px;
+    text-align: center;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+h1 {
+    font-size: 1.5em;
+    margin: 0;
+    color: #333;
+}
+
+/* Toggle Button Styling */
+#toggleButton {
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s, opacity 0.2s;
+}
+
+/* Styling based on active/inactive state (will be managed by popup.js) */
+#toggleButton[disabled] {
+    background-color: #ccc !important;
+    cursor: not-allowed;
+}
+
+/* Volume Control Slider */
+.volume-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+#volumeSlider {
+    width: 100%;
+}
+
+/* Status Area and Close Button */
+.status-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+#statusMessage {
+    font-size: 0.9em;
+    color: #555;
+}
+
+#closeButton {
+    padding: 8px 12px;
+    border: none;
+    background-color: #eee;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
