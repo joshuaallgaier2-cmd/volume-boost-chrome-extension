@@ -1,11 +1,11 @@
 // content-scripts/audio-enhancer.js
 /**
  * Content script responsible for detecting and boosting audio output volume using the Web Audio API.
- * It attempts to hook into all available HTML <audio> and <video> elements.
+ * It hooks into HTML <audio> and <video> elements to apply volume boost.
  */
 
+let activeBoosters = new Map(); // Track element -> gainNode mapping
 const BOOST_GAIN_NODE_CLASS = 'volume-booster-gain-node';
-let activeBoosters = new Set(); // Keep track of elements already processed
 
 /**
  * Applies a gain node to an audio element, boosting the volume.
@@ -15,44 +15,45 @@ let activeBoosters = new Set(); // Keep track of elements already processed
 function applyVolumeBoost(mediaElement, boostLevel) {
     // Prevent re-processing if already boosted
     if (activeBoosters.has(mediaElement)) {
-        console.log('[Volume Booster] Already applied boost to:', mediaElement);
+        console.log('[Volume Booster] Already applied boost to:', mediaElement.id || mediaElement.src);
         return;
     }
 
     try {
-        // Use the Web Audio API Context
+        // Use the Web Audio API Context - resume if suspended
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        let sourceNode;
-
-        if (mediaElement.tagName === 'VIDEO' || mediaElement.tagName === 'AUDIO') {
-            sourceNode = audioContext.createMediaStreamSource(mediaElement);
-        } else {
-             // Fallback or error handling if the element type is unexpected
-             console.error("[Volume Booster] Unsupported media element for Web Audio API.");
-             return;
+        
+        if (audioContext.state === 'suspended') {
+            audioContext.resume().catch(err => {
+                console.warn('[Volume Booster] Could not resume AudioContext:', err);
+            });
         }
 
-        // 1. Create Gain Node (the booster)
-        const gainNode = audioContext.createGain();
-        gainNode.gain.setValueAtTime(boostLevel, audioContext.currentTime); // Set boost level
+        // Create Media Element Source - this wraps the HTML media element
+        const sourceNode = audioContext.createMediaElementSource(mediaElement);
 
-        // 2. Connect the nodes: Source -> Booster -> Destination
+        // Create Gain Node for volume control
+        const gainNode = audioContext.createGain();
+        
+        // Set initial gain value (boostLevel: 1.0 = normal, >1 = boost, <1 = reduce)
+        const targetGain = Math.min(boostLevel, 5); // Cap at 5x boost
+        gainNode.gain.setValueAtTime(targetGain, audioContext.currentTime);
+
+        // Connect: Source -> Gain Node -> Destination (speakers)
         sourceNode.connect(gainNode);
         gainNode.connect(audioContext.destination);
 
-        // Store a reference to the gain node on the element for later manipulation/cleanup
+        // Store reference for cleanup
         mediaElement.setAttribute('data-volume-booster', 'true');
         mediaElement.dataset.volumeBoosterGain = gainNode;
-        activeBoosters.add(mediaElement);
+        activeBoosters.set(mediaElement, { gainNode, audioContext });
 
         console.log(`[Volume Booster] Successfully boosted volume for ${mediaElement.tagName} element.`);
 
     } catch (e) {
-        // Web Audio API might fail if the context is suspended or permissions are denied
-        console.error("[Volume Booster] Error applying boost:", e);
+        console.error("[Volume Booster] Error applying boost:", e.message, e.stack);
     }
 }
-
 
 /**
  * Initializes the audio boosting across the current page content.
@@ -67,26 +68,23 @@ function initializeBoost(boostLevel) {
 }
 
 /**
- * Cleans up all applied volume boosts by reconnecting the original source directly to destination.
+ * Cleans up all applied volume boosts.
  */
 function cleanupAllBoosters() {
-    activeBoosters.forEach(element => {
-        const gainNode = element.dataset.volumeBoosterGain;
-        if (gainNode) {
-            // Disconnect everything related to boosting
-            try {
+    activeBoosters.forEach(({ gainNode, audioContext }, element) => {
+        try {
+            if (gainNode) {
+                // Disconnect the gain node from destination
                 gainNode.disconnect();
-                // Re-establish direct connection for normal flow (if possible, though complex in reality)
-                // For simplicity here, we just remove the attribute and assume browser handles native restoration on state change.
-                element.removeAttribute('data-volume-booster');
-            } catch(e) {
-                console.warn("Could not fully clean up audio node:", e);
             }
+            // Remove attributes
+            element.removeAttribute('data-volume-booster');
+            element.dataset.volumeBoosterGain = '';
+        } catch (e) {
+            console.warn("Could not clean up audio node:", e.message);
         }
     });
     activeBoosters.clear();
-    // Note: A perfect cleanup requires re-wiring the entire DOM tree's audio connections, which is complex. 
-    // This function handles the core gain node disconnection.
 }
 
 /**
@@ -98,26 +96,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log(`[Content Script] Received command to apply boost at level: ${boostLevel}`);
         initializeBoost(boostLevel);
 
-        // Respond that the action was taken
         sendResponse({ success: true, message: `Audio volume boosted successfully.` });
     } else if (message.action === "REMOVE_BOOST") {
         console.log("[Content Script] Received command to remove boost.");
         cleanupAllBoosters();
         sendResponse({ success: true, message: `Audio volume restored.` });
+    } else if (message.action === "GET_STATUS") {
+        const boostedCount = activeBoosters.size;
+        sendResponse({ 
+            success: true, 
+            message: `${boostedCount} audio element(s) currently boosted.`,
+            count: boostedCount 
+        });
     }
 });
 
-
 // --- Mutation Observer for dynamic content loading (e.g., YouTube embeds) ---
 const observer = new MutationObserver((mutationsList) => {
-    // Check newly added elements for audio/video tags
     for(const mutation of mutationsList) {
         if (mutation.type === 'childList') {
             mutation.addedNodes.forEach(node => {
                 if (node.nodeType === 1) { // Element node
-                    if ((node.tagName === 'VIDEO' || node.tagName === 'AUDIO') && !activeBoosters.has(node)) {
-                        // Re-initialize boost check for newly loaded content
-                        const currentBoostLevel = parseFloat(document.getElementById('volumeSlider')?.value || 1);
+                    const tagName = node.tagName;
+                    if ((tagName === 'VIDEO' || tagName === 'AUDIO') && !activeBoosters.has(node)) {
+                        // Get current boost level from slider or default to 1
+                        const volumeSlider = document.getElementById('volumeSlider');
+                        const currentBoostLevel = volumeSlider ? parseFloat(volumeSlider.value) : 1;
                         applyVolumeBoost(node, currentBoostLevel);
                     }
                 }
@@ -128,3 +132,6 @@ const observer = new MutationObserver((mutationsList) => {
 
 // Start observing the body for changes in children
 observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
+
+// Log initialization
+console.log('[Volume Booster] Content script initialized. Waiting for boost commands...');
