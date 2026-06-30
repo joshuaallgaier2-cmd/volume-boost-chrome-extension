@@ -4,6 +4,7 @@ body {
     width: 300px; /* Standard popup width */
     padding: 15px;
     text-align: center;
+    border-radius: 10px;
 }
 
 .container {
@@ -66,4 +67,73 @@ h1 {
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.9em;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #1e1e1e;
+        color: #e0e0e0;
+    }
+
+    h1 {
+        color: #ffffff;
+    }
+
+    /* Dark mode toggle button */
+    #toggleButton {
+        background-color: #0d47a1;
+        color: #ffffff;
+    }
+
+    #toggleButton:hover {
+        background-color: #1565c0;
+    }
+
+    #toggleButton[disabled] {
+        background-color: #555555 !important;
+        color: #999999;
+    }
+
+    /* Dark mode volume slider */
+    #volumeSlider {
+        accent-color: #1976d2;
+    }
+
+    #volumeSlider::-webkit-slider-track {
+        background: #444444;
+    }
+
+    #volumeSlider::-webkit-slider-thumb {
+        background-color: #1976d2;
+    }
+
+    #volumeSlider::-moz-range-track {
+        background: #444444;
+    }
+
+    #volumeSlider::-moz-range-thumb {
+        background-color: #1976d2;
+        border-color: #1976d2;
+    }
+
+    /* Dark mode status message */
+    #statusMessage {
+        color: #b0b0b0;
+    }
+
+    /* Dark mode close button */
+    #closeButton {
+        background-color: #333333;
+        color: #e0e0e0;
+        border: 1px solid #555555;
+    }
+
+    #closeButton:hover {
+        background-color: #444444;
+    }
+
+    .volume-control {
+        color: #e0e0e0;
+    }
 }
