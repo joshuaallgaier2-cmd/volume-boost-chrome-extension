@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Boost the audio volume on the current tab.",
   "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": ["https://*/*", "http://*/*"],
   "action": {
     "default_title": "Volume Boost",
     "default_popup": "popup.html"

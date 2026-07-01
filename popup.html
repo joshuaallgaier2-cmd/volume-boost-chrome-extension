@@ -5,13 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Volume Boost</title>
     <style>
+      :root {
+        /* Dark theme (default) */
+        --bg-color: #111827;
+        --text-color: #f9fafb;
+        --accent-color: #93c5fd;
+        --border-color: #374151;
+      }
+
+      [data-theme="light"] {
+        --bg-color: #ffffff;
+        --text-color: #1f2937;
+        --accent-color: #2563eb;
+        --border-color: #e5e7eb;
+      }
+
       body {
         font-family: Arial, sans-serif;
         margin: 0;
         padding: 14px;
         min-width: 240px;
-        background: #111827;
-        color: #f9fafb;
+        background: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s ease, color-color 0.3s ease;
       }
       h1 {
         font-size: 16px;
@@ -29,11 +45,43 @@
       .value {
         font-weight: 600;
         font-size: 14px;
-        color: #93c5fd;
+        color: var(--accent-color);
+      }
+      .top-right-container {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 100;
+      }
+
+      .theme-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background: var(--border-color);
+        border-radius: 6px;
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.3s ease;
+      }
+
+      .theme-toggle:hover {
+        opacity: 0.9;
+      }
+
+      .theme-icon {
+        font-size: 20px;
       }
     </style>
   </head>
   <body>
+    <div class="top-right-container">
+      <div class="theme-toggle" id="themeToggle">
+        <span>Theme</span>
+        <span class="theme-icon" id="themeIcon">🌙</span>
+      </div>
+    </div>
     <h1>Volume Boost</h1>
     <label for="boost">Boost level</label>
     <input id="boost" type="range" min="1" max="5" step="0.5" value="1" />
