@@ -3,6 +3,7 @@ const valueLabel = document.getElementById('value');
 const themeToggle = document.getElementById('themeToggle');
 const themeIcon = document.getElementById('themeIcon');
 
+// Function definitions first
 function updateLabel(level) {
   valueLabel.textContent = `${Number(level).toFixed(1)}x`;
 }
@@ -21,33 +22,15 @@ function applyBoost(level) {
         return;
       }
 
-      chrome.tabs.sendMessage(tab.id, { type: 'setBoost', boost: level }, () => {
-        // chrome.runtime.lastError is expected here for tabs without content scripts
-        // or when the message can't be delivered - this is not an error condition
-      });
+      try {
+        chrome.tabs.sendMessage(tab.id, { type: 'setBoost', boost: level });
+      } catch (error) {
+        // Message failed - this is expected when no content script is present
+        // This is normal behavior and should not be treated as an error
+      }
     });
   });
 }
-
-slider.addEventListener('input', (event) => {
-  const level = Number(event.target.value);
-  updateLabel(level);
-  applyBoost(level);
-});
-
-themeToggle.addEventListener('click', toggleTheme);
-
-chrome.storage.sync.get(['boost', 'theme'], (result) => {
-  const level = Number(result.boost) || 1;
-  const theme = result.theme || 'dark';
-
-  slider.value = level;
-  updateLabel(level);
-  applyBoost(level);
-
-  // Set initial theme
-  setTheme(theme);
-});
 
 function toggleTheme() {
   chrome.storage.sync.get('theme', (result) => {
@@ -67,3 +50,25 @@ function setTheme(theme) {
   }
   chrome.storage.sync.set({ theme: theme });
 }
+
+// Event listeners after functions are defined
+slider.addEventListener('input', (event) => {
+  const level = Number(event.target.value);
+  updateLabel(level);
+  applyBoost(level);
+});
+
+themeToggle.addEventListener('click', toggleTheme);
+
+// Initialize on page load
+chrome.storage.sync.get(['boost', 'theme'], (result) => {
+  const level = Number(result.boost) || 1;
+  const theme = result.theme || 'dark';
+
+  slider.value = level;
+  updateLabel(level);
+  applyBoost(level);
+
+  // Set initial theme
+  setTheme(theme);
+});
