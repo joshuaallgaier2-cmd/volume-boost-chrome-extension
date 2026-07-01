@@ -1,33 +1,19 @@
 {
   "manifest_version": 3,
-  "name": "Volume Booster",
+  "name": "Volume Boost",
   "version": "1.0.0",
-  "description": "Boost system and browser audio volume up to 250%",
-  "permissions": ["activeTab"],
+  "description": "Boost the audio volume on the current tab.",
+  "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": ["<all_urls>"],
   "action": {
-    "default_popup": "public/popup.html",
-    "default_icon": {
-      "16": "src/icons/icon-16.png",
-      "48": "src/icons/icon-48.png",
-      "128": "src/icons/icon-128.png"
-    }
-  },
-  "background": {
-    "service_worker": "src/background.js",
-    "type": "module"
+    "default_title": "Volume Boost",
+    "default_popup": "popup.html"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content-scripts/audio-enhancer.js"],
-      "css": ["content-scripts/audio.css"]
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": ["content-scripts/*", "public/*"],
-      "matches": ["<all_urls>"]
+      "js": ["content.js"],
+      "run_at": "document_idle"
     }
   ]
 }
